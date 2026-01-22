@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Is AF1 ADS-B on</title>
+  <title>Is AF1 ADS-B on?</title>
   <style>
     body {
       background: black;
@@ -10,12 +10,20 @@
       text-align: center;
       padding-top: 50px;
     }
+    #status {
+      font-size: 2em;
+      margin-bottom: 20px;
+    }
+    #info {
+      font-size: 1.2em;
+    }
   </style>
 </head>
 <body>
 
 <h1>Status</h1>
-<h2 id="status">Checking...</h2>
+<div id="status">Checking...</div>
+<div id="info"></div>
 
 <script>
 async function checkAF1() {
@@ -25,17 +33,37 @@ async function checkAF1() {
 
     const states = data.states || [];
 
+    // Look for AF1 or similar callsigns
     const af1 = states.find(s =>
       s[1] && s[1].trim().startsWith("AF1")
     );
 
-    document.getElementById("status").innerText =
-      af1 ? "Yes." : "No.";
+    const statusEl = document.getElementById("status");
+    const infoEl = document.getElementById("info");
+
+    if (af1) {
+      const callsign = af1[1].trim();
+      const latitude = af1[6] ? af1[6].toFixed(4) : "Unknown";
+      const longitude = af1[5] ? af1[5].toFixed(4) : "Unknown";
+      const altitude = af1[7] ? Math.round(af1[7]) + " m" : "Unknown";
+
+      statusEl.innerText = "Yes.";
+      infoEl.innerHTML = `
+        Callsign: ${callsign} <br>
+        Last seen location: ${latitude}, ${longitude} <br>
+        Last seen altitude: ${altitude}
+      `;
+    } else {
+      statusEl.innerText = "No.";
+      infoEl.innerHTML = "";
+    }
   } catch (e) {
     document.getElementById("status").innerText = "ERROR";
+    document.getElementById("info").innerText = "";
   }
 }
 
+// Check every 30 seconds
 checkAF1();
 setInterval(checkAF1, 30000);
 </script>
