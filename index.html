@@ -1,34 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <link rel="icon" type="image/png" href="favicon.png.png">
+  <meta charset="UTF-8">
   <title>AF1 Tracker</title>
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet/dist/leaflet.css"
-  />
+  <link rel="icon" type="image/png" href="favicon.png.png">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    body {
-      background: black;
-      color: #00ff00;
-      font-family: monospace;
-      text-align: center;
-      padding-top: 20px;
-    }
-    #status {
-      font-size: 2em;
-      margin-bottom: 10px;
-    }
-    #info {
-      font-size: 1.2em;
-      margin-bottom: 20px;
-    }
-    #map {
-      height: 400px;
-      width: 80%;
-      margin: 0 auto;
-      border: 2px solid #00ff00;
-    }
+    body {background:black;color:#00ff00;font-family:monospace;text-align:center;padding:20px;}
+    #status {font-size:2em;margin-bottom:10px;}
+    #info {font-size:1.2em;margin-bottom:20px;}
+    #map {height:400px;width:80%;margin:0 auto;border:2px solid #00ff00;}
+    #support-ukraine {font-family:monospace;text-align:center;border:2px solid #0057b7;
+      background:#ffd700;padding:15px;width:300px;margin:20px auto;color:#000;}
+    #support-ukraine ul {list-style:none;padding-left:0;}
   </style>
 </head>
 <body>
@@ -38,78 +22,55 @@
 <div id="info"></div>
 <div id="map"></div>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script>
-  // Initialize Leaflet map
-  const map = L.map('map').setView([53, -10], 5);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
-
-  // Marker for AF1
-  const marker = L.marker([53, -10]).addTo(map)
-    .bindPopup('AF1')
-    .openPopup();
-
-  async function checkAF1() {
-    try {
-      const res = await fetch("https://opensky-network.org/api/states/all");
-      const data = await res.json();
-
-      const states = data.states || [];
-      const af1 = states.find(s =>
-        s[1] && s[1].trim().startsWith("AF1")
-      );
-
-      const statusEl = document.getElementById("status");
-      const infoEl = document.getElementById("info");
-
-      if (af1) {
-        const callsign = af1[1].trim();
-        const latitude = af1[6] ? af1[6].toFixed(4) : "Unknown";
-        const longitude = af1[5] ? af1[5].toFixed(4) : "Unknown";
-        const altitude = af1[7] ? Math.round(af1[7]) + " m" : "Unknown";
-
-        statusEl.innerText = "Yes.";
-        infoEl.innerHTML = `
-          Callsign: ${callsign} <br>
-          Last seen location: ${latitude}, ${longitude} <br>
-          Last seen altitude: ${altitude}
-        `;
-
-        // Update marker and map
-        marker.setLatLng([latitude, longitude]);
-        marker.setPopupContent(`${callsign} — ${altitude}`);
-        map.setView([latitude, longitude], 5);
-
-      } else {
-        statusEl.innerText = "No.";
-        infoEl.innerHTML = "";
-      }
-    } catch (e) {
-      document.getElementById("status").innerText = "ERROR";
-      document.getElementById("info").innerText = "";
-    }
-  }
-
-  // Initial check
-  checkAF1();
-  // Refresh every 30 seconds
-  setInterval(checkAF1, 30000);
-
-</script>
-
-  <div id="support-ukraine" style="font-family: monospace; text-align: center; 
-     border: 2px solid #0057b7; background: #ffd700; padding: 15px; width: 300px; margin: 20px auto; color: #000;">
-  <div style="font-size: 2em;">🇺🇦 Support Ukraine 🇺🇦</div>
+<div id="support-ukraine">
+  <div style="font-size:2em;">🇺🇦 Support Ukraine 🇺🇦</div>
   <p>Your help matters! Consider donating:</p>
-  <ul style="list-style: none; padding-left: 0;">
+  <ul>
     <li><a href="https://www.unhcr.org/ukraine-emergency.html" target="_blank">UNHCR Ukraine Crisis</a></li>
     <li><a href="https://www.icrc.org/en/where-we-work/europe-central-asia/ukraine" target="_blank">ICRC Emergency Aid</a></li>
-    <li><a href="https://www.savethechildren.org/us/what-we-do/where-we-work/ukraine" target="_blank">Save the Children</a></li>
+    <li><a href="https://www.savethechildren.org/us/where-we-work/ukraine" target="_blank">Save the Children</a></li>
   </ul>
-  <p style="font-size: 0.9em;">Every contribution helps families in need.</p>
+  <p style="font-size:0.9em;">Every contribution helps families in need.</p>
 </div>
 
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+const map = L.map('map').setView([53, -10], 5);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
+const marker = L.marker([53,-10]).addTo(map).bindPopup('AF1').openPopup();
+
+async function checkAF1(){
+  const statusEl=document.getElementById("status");
+  const infoEl=document.getElementById("info");
+  try{
+    const res=await fetch("https://opensky-network.org/api/states/all");
+    if(!res.ok) throw new Error("Network response not ok");
+    const data=await res.json();
+    const af1=(data.states||[]).find(s=>s[1]&&s[1].trim().startsWith("AF1"));
+    if(af1){
+      const callsign=af1[1].trim();
+      const latitude=af1[6]?af1[6].toFixed(4):"Unknown";
+      const longitude=af1[5]?af1[5].toFixed(4):"Unknown";
+      const altitude=af1[7]?Math.round(af1[7])+" m":"Unknown";
+      statusEl.innerText="Yes.";
+      infoEl.innerHTML=`Callsign: ${callsign} <br>Last seen location: ${latitude}, ${longitude} <br>Last seen altitude: ${altitude}`;
+      marker.setLatLng([latitude,longitude]);
+      marker.setPopupContent(`${callsign} — ${altitude}`);
+      map.setView([latitude,longitude],5);
+    } else {
+      statusEl.innerText="No.";
+      infoEl.innerHTML="";
+    }
+  }catch(e){
+    statusEl.innerText="Waiting..";
+    infoEl.innerHTML="";
+    console.log("OpenSky fetch error:",e);
+  }
+}
+
+checkAF1();
+setInterval(checkAF1,30000);
+</script>
 </body>
 </html>
