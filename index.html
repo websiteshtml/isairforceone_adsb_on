@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Is AF1 ADS-B on</title>
+  <style>
+    body {
+      background: black;
+      color: #00ff00;
+      font-family: monospace;
+      text-align: center;
+      padding-top: 50px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Status</h1>
+<h2 id="status">Checking...</h2>
+
+<script>
+async function checkAF1() {
+  try {
+    const res = await fetch("https://opensky-network.org/api/states/all");
+    const data = await res.json();
+
+    const states = data.states || [];
+
+    const af1 = states.find(s =>
+      s[1] && s[1].trim().startsWith("AF1")
+    );
+
+    document.getElementById("status").innerText =
+      af1 ? "Yes." : "No.";
+  } catch (e) {
+    document.getElementById("status").innerText = "ERROR";
+  }
+}
+
+checkAF1();
+setInterval(checkAF1, 30000);
+</script>
+
+</body>
+</html>
