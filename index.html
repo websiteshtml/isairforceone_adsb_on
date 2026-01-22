@@ -1,21 +1,32 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Is AF1 ADS-B on?</title>
+  <title>AF1 Tracker</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet/dist/leaflet.css"
+  />
   <style>
     body {
       background: black;
       color: #00ff00;
       font-family: monospace;
       text-align: center;
-      padding-top: 50px;
+      padding-top: 20px;
     }
     #status {
       font-size: 2em;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
     }
     #info {
       font-size: 1.2em;
+      margin-bottom: 20px;
+    }
+    #map {
+      height: 400px;
+      width: 80%;
+      margin: 0 auto;
+      border: 2px solid #00ff00;
     }
   </style>
 </head>
@@ -24,49 +35,67 @@
 <h1>Status</h1>
 <div id="status">Checking...</div>
 <div id="info"></div>
+<div id="map"></div>
 
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-async function checkAF1() {
-  try {
-    const res = await fetch("https://opensky-network.org/api/states/all");
-    const data = await res.json();
+  // Initialize Leaflet map
+  const map = L.map('map').setView([53, -10], 5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
 
-    const states = data.states || [];
+  // Marker for AF1
+  const marker = L.marker([53, -10]).addTo(map)
+    .bindPopup('AF1')
+    .openPopup();
 
-    // Look for AF1 or similar callsigns
-    const af1 = states.find(s =>
-      s[1] && s[1].trim().startsWith("AF1")
-    );
+  async function checkAF1() {
+    try {
+      const res = await fetch("https://opensky-network.org/api/states/all");
+      const data = await res.json();
 
-    const statusEl = document.getElementById("status");
-    const infoEl = document.getElementById("info");
+      const states = data.states || [];
+      const af1 = states.find(s =>
+        s[1] && s[1].trim().startsWith("AF1")
+      );
 
-    if (af1) {
-      const callsign = af1[1].trim();
-      const latitude = af1[6] ? af1[6].toFixed(4) : "Unknown";
-      const longitude = af1[5] ? af1[5].toFixed(4) : "Unknown";
-      const altitude = af1[7] ? Math.round(af1[7]) + " m" : "Unknown";
+      const statusEl = document.getElementById("status");
+      const infoEl = document.getElementById("info");
 
-      statusEl.innerText = "Yes.";
-      infoEl.innerHTML = `
-        Callsign: ${callsign} <br>
-        Last seen location: ${latitude}, ${longitude} <br>
-        Last seen altitude: ${altitude}
-      `;
-    } else {
-      statusEl.innerText = "No.";
-      infoEl.innerHTML = "";
+      if (af1) {
+        const callsign = af1[1].trim();
+        const latitude = af1[6] ? af1[6].toFixed(4) : "Unknown";
+        const longitude = af1[5] ? af1[5].toFixed(4) : "Unknown";
+        const altitude = af1[7] ? Math.round(af1[7]) + " m" : "Unknown";
+
+        statusEl.innerText = "Yes.";
+        infoEl.innerHTML = `
+          Callsign: ${callsign} <br>
+          Last seen location: ${latitude}, ${longitude} <br>
+          Last seen altitude: ${altitude}
+        `;
+
+        // Update marker and map
+        marker.setLatLng([latitude, longitude]);
+        marker.setPopupContent(`${callsign} — ${altitude}`);
+        map.setView([latitude, longitude], 5);
+
+      } else {
+        statusEl.innerText = "No.";
+        infoEl.innerHTML = "";
+      }
+    } catch (e) {
+      document.getElementById("status").innerText = "ERROR";
+      document.getElementById("info").innerText = "";
     }
-  } catch (e) {
-    document.getElementById("status").innerText = "ERROR";
-    document.getElementById("info").innerText = "";
   }
-}
 
-// Check every 30 seconds
-checkAF1();
-setInterval(checkAF1, 30000);
+  // Initial check
+  checkAF1();
+  // Refresh every 30 seconds
+  setInterval(checkAF1, 30000);
+
 </script>
-
 </body>
 </html>
